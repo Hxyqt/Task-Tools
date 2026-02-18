@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Trial Tools</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #0f1b22;
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+    h1 { margin-bottom: 8px; }
+
+    .tabs {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin: 10px 0 25px;
+      flex-wrap: wrap;
+    }
+    .tabBtn {
+      background: #2d3b44;
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: 0.2s;
+    }
+    .tabBtn.active {
+      background: #2bb3ff;
+      box-shadow: 0 0 12px #2bb3ff;
+    }
+
+    .sphere-container { margin: 20px 0; }
+    .sphereBtn {
+      background: #2d3b44;
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      margin: 6px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: 0.2s;
+    }
+    .sphereBtn:hover { background: #3a4a54; }
+    .sphereBtn.active {
+      background: #2bb3ff;
+      box-shadow: 0 0 12px #2bb3ff;
+    }
+
+    .fieldWrap {
+      display: grid;
+      gap: 10px;
+      justify-content: center;
+      margin: 18px 0;
+    }
+    input, textarea {
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid #2d3b44;
+      background: #16242d;
+      color: white;
+      min-width: 360px;
+      outline: none;
+      font-family: Arial, sans-serif;
+    }
+    textarea { min-height: 90px; resize: vertical; }
+    input::placeholder, textarea::placeholder { color: #9fb2bf; }
+
+    button.mainBtn {
+      background: #2bb3ff;
+      border: none;
+      padding: 10px 20px;
+      margin: 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    button.mainBtn:hover { background: #52c2ff; }
+
+    .outputBox {
+      margin-top: 18px;
+      padding: 15px;
+      background: #16242d;
+      border-radius: 10px;
+      white-space: pre-line;
+      max-width: 900px;
+      margin-left: auto;
+      margin-right: auto;
+      font-size: 16px;
+      text-align: left;
+    }
+
+    .page { display: none; }
+    .page.active { display: block; }
+
+    #copyStatus {
+      margin-top: 10px;
+      opacity: 0.85;
+      min-height: 18px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>Trial Tools</h1>
+
+  <div class="tabs">
+    <button class="tabBtn active" data-page="tasksPage">Trial Tasks</button>
+    <button class="tabBtn" data-page="sponsorPage">Sponsorships</button>
+    <button class="tabBtn" data-page="logPage">Generate Log</button>
+  </div>
+
+  <!-- TASKS PAGE -->
+  <div id="tasksPage" class="page active">
+    <div>Select a Sphere</div>
+
+    <div class="sphere-container">
+      <button class="sphereBtn" data-sphere="D&S">D&S</button>
+      <button class="sphereBtn" data-sphere="E&D">E&D</button>
+      <button class="sphereBtn" data-sphere="L&J">L&J</button>
+      <button class="sphereBtn" data-sphere="SOP">SOP</button>
+      <button class="sphereBtn" data-sphere="AK">AK</button>
+      <button class="sphereBtn" data-sphere="DHG">DHG</button>
+    </div>
+
+    <div>
+      <button id="taskBtn" class="mainBtn">Generate Task</button>
+      <button id="copyTaskBtn" class="mainBtn">Copy Task Only</button>
+    </div>
+
+    <div id="taskOutput" class="outputBox">Select a sphere and generate a task.</div>
+  </div>
+
+  <!-- SPONSOR PAGE -->
+  <div id="sponsorPage" class="page">
+    <h2>Sponsorship Generator</h2>
+
+    <div class="fieldWrap">
+      <input id="shamanName" placeholder="Shaman name (Discord tag or @mention)">
+      <input id="apprenticeName" placeholder="Apprentice name (Discord tag or @mention)">
+    </div>
+
+    <div>
+      <button id="sponsorBtn" class="mainBtn">Generate Sponsorship</button>
+      <button id="copySponsorBtn" class="mainBtn">Copy Sponsorship</button>
+    </div>
+
+    <div id="sponsorOutput" class="outputBox">Fill in names and generate sponsorship.</div>
+  </div>
+
+  <!-- LOG PAGE -->
+  <div id="logPage" class="page">
+    <h2>Log Generator</h2>
+
+    <div class="fieldWrap">
+      <input id="logApprentice" placeholder="Apprentice name">
+      <textarea id="logTask" placeholder="Paste task here"></textarea>
+    </div>
+
+    <div>
+      <button id="genLogBtn" class="mainBtn">Generate Log</button>
+      <button id="copyLogBtn" class="mainBtn">Copy Log</button>
+    </div>
+
+    <div id="logOutput" class="outputBox">Fill in apprentice and paste task.</div>
+  </div>
+
+  <div id="copyStatus"></div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+
+      /* --------- SAFE COPY (Clipboard + fallback) --------- */
+      const statusEl = document.getElementById("copyStatus");
+
+      function setStatus(msg) {
+        statusEl.textContent = msg;
+        setTimeout(() => statusEl.textContent = "", 1400);
+      }
+
+      async function safeCopy(text) {
+        if (!text) return false;
+
+        // Try modern clipboard
+        try {
+          await navigator.clipboard.writeText(text);
+          return true;
+        } catch (e) {
+          // Fallback
+          try {
+            const ta = document.createElement("textarea");
+            ta.value = text;
+            ta.style.position = "fixed";
+            ta.style.left = "-9999px";
+            ta.style.top = "0";
+            document.body.appendChild(ta);
+            ta.focus();
+            ta.select();
+            const ok = document.execCommand("copy");
+            document.body.removeChild(ta);
+            return ok;
+          } catch {
+            return false;
+          }
+        }
+      }
+
+      /* ---------------- TABS ---------------- */
+      const tabButtons = document.querySelectorAll(".tabBtn");
+      const pages = document.querySelectorAll(".page");
+
+      tabButtons.forEach(btn => {
+        btn.addEventListener("click", () => {
+          tabButtons.forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+
+          pages.forEach(p => p.classList.remove("active"));
+          document.getElementById(btn.dataset.page).classList.add("active");
+        });
+      });
+
+      /* ---------------- TASKS ---------------- */
+      let selectedSphere = null;
+      let currentTask = "";
+
+      const sphereTasks = {
+        "D&S": [
+          "Task 1 – Kill a Knight+ without assistance, and show evidence.",
+          "Task 2 – Kill an Advanced Jedi Knight+ without assistance, and show evidence.",
+          "Task 3 – Duel your master 10 times, then write a 5+ sentence summary of their combat style and how you can counter it.",
+          "Task 4 – Write a 6+ sentence summary on one of the Patrol Groups that Defense of Security controls.",
+          "Task 5 – Protect our temples by eliminating 5 Jedi on Crucible Prime and provide evidence.",
+          "Task 6 – Survive 60 seconds against 2 or more Jedi on the planet of Spintir and provide evidence."
+        ],
+        "E&D": [
+          "Task 1 – Infiltrate the Combat quarters on Dawn, and provide a detailed observation of a Jedi's combat style and how to counter it.",
+          "Task 2 – Eliminate a Temple Guard on the planet of Dawn and provide evidence.",
+          "Task 3 – Write a 6+ sentence summary of an event in your sphere and how it contributes to your Sphere's functionality.",
+          "Task 4 – Attend an Official Raid hosted by The Sphere of Expansion and Diplomacy and show evidence.",
+          "Task 5 – Explain why it is important for the Sith to expand their domain in order to maintain power.",
+          "Task 6 – Win a duel against a JAT member without assistance and provide evidence.",
+          "Task 7 – Win a 2 VS 1 against Jedi ranking from Youngling IV to Jedi Knight."
+        ],
+        "L&J": [
+          "Task 1 – Give a detailed explanation on why the Sith Doctrine is important for the Order to function, despite being Sith.",
+          "Task 2 – Write 6+ sentence summary on a branch from the Sphere of Laws and Justice.",
+          "Task 3 – Give a detailed explanation on the importance of a Tribunal in the Sith Order.",
+          "Task 4 – Interview a Lord+ in the Sphere of Laws and Justice on their experience in the order then write 8+ sentences on it.",
+          "Task 5 – Write a 6+ sentence summary for an entry from 'Tribunal Chamber'.",
+          "Task 6 – Write 6+ sentences of a law of the Shamans choice."
+        ],
+        "SOP": [
+          "Task 1 – Explain the importance of the Tenets to the Sith Order.",
+          "Task 2 – Give a detailed explanation on how you would convert a Jedi to Sith.",
+          "Task 3 – Write 6+ sentences on a class from the Sith Academy and why that class is important to the order.",
+          "Task 4 – Write an 8+ sentence summary of what a kaggath is, and the scenarios in which one might be declared.",
+          "Task 5 – Give a detailed explanation on why it is important for the Masters to prepare their Apprentices for all situations."
+        ],
+        "AK": [
+          "Task 1 – Infiltrate the Jedi archives and write a 6+ sentence summary on an entry from 'Persons of interest'.",
+          "Task 2 – Infiltrate the Jedi archives and write a 6+ sentence summary on an entry from 'TJO-Group History'.",
+          "Task 3 – Write a 6+ sentence summary for an entry from 'Planets'.",
+          "Task 4 – Write a 6+ sentence summary on an entry from 'Sith Philosophy'.",
+          "Task 5 – Write a 6+ sentence summary on the origins of the Sith Order and how it was raised to power.",
+          "Task 6 – Explain the Importance of Lore events within the Sith Order.",
+          "Task 7 – Come up with an authentic roleplaying event that could be hosted in the order."
+        ],
+        "DHG": [
+          "Task 1 – Defeat a Dark Honor Guard in a duel and provide evidence.",
+          "Task 2 – Write a 6+ sentence summary on what the Dark Honor Guard are and why they are important to the order.",
+          "Task 3 – Give a detailed explanation on the use of the Powerbase for the Dark Lord and why they are vital for the Order.",
+          "Task 4 – Give a detailed summary for a singular rank in the Dark Honor Guard.",
+          "Task 5 – Eliminate a Jedi Master+ without assistance and provide evidence.",
+          "Task 6 – Survive a minimum of 60 seconds against Jedi/TG after crossing the pillars for the Temple, must be minimum 3 Jedi."
+        ]
+      };
+
+      document.querySelectorAll(".sphereBtn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          document.querySelectorAll(".sphereBtn").forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          selectedSphere = btn.dataset.sphere;
+        });
+      });
+
+      document.getElementById("taskBtn").addEventListener("click", () => {
+        const out = document.getElementById("taskOutput");
+
+        if (!selectedSphere) {
+          out.textContent = "⚠ Select a sphere first.";
+          currentTask = "";
+          return;
+        }
+
+        const tasks = sphereTasks[selectedSphere] || [];
+        const randomTask = tasks[Math.floor(Math.random() * tasks.length)];
+        currentTask = randomTask;
+
+        out.textContent = `Here is your ${selectedSphere} Task:\n${randomTask}`;
+      });
+
+      document.getElementById("copyTaskBtn").addEventListener("click", async () => {
+        const ok = await safeCopy(currentTask);
+        setStatus(ok ? "✅ Task copied!" : "❌ Copy blocked (try https/local server).");
+      });
+
+      /* ---------------- SPONSORSHIP ---------------- */
+      let currentSponsor = "";
+
+      document.getElementById("sponsorBtn").addEventListener("click", () => {
+        const shaman = document.getElementById("shamanName").value.trim();
+        const apprentice = document.getElementById("apprenticeName").value.trim();
+        const out = document.getElementById("sponsorOutput");
+
+        if (!shaman || !apprentice) {
+          out.textContent = "⚠ Fill both names.";
+          currentSponsor = "";
+          return;
+        }
+
+        currentSponsor = `I, @${shaman}, give you @${apprentice}, my sponsorship for your upcoming knight trials.`;
+        out.textContent = currentSponsor;
+      });
+
+      document.getElementById("copySponsorBtn").addEventListener("click", async () => {
+        const ok = await safeCopy(currentSponsor);
+        setStatus(ok ? "✅ Sponsorship copied!" : "❌ Copy blocked (try https/local server).");
+      });
+
+      /* ---------------- LOG GENERATOR ---------------- */
+      let currentLog = "";
+
+      document.getElementById("genLogBtn").addEventListener("click", () => {
+        const apprentice = document.getElementById("logApprentice").value.trim();
+        const task = document.getElementById("logTask").value.trim();
+        const out = document.getElementById("logOutput");
+
+        if (!apprentice || !task) {
+          out.textContent = "⚠ Fill apprentice name and paste the task.";
+          currentLog = "";
+          return;
+        }
+
+        currentLog =
+          `Apprentice name: ${apprentice}\n` +
+          `Task: ${task}\n` +
+          `Status: :hourglass:`;
+
+        out.textContent = currentLog;
+      });
+
+      document.getElementById("copyLogBtn").addEventListener("click", async () => {
+        const ok = await safeCopy(currentLog);
+        setStatus(ok ? "✅ Log copied!" : "❌ Copy blocked (try https/local server).");
+      });
+
+    });
+  </script>
+
+</body>
+</html>
